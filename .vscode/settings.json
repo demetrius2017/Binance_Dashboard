@@ -1,0 +1,103 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+    
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ],
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false
+    },
+    "github.copilot.selectedCompletionModel": "gpt-5",
+    "files.maxFileSize": 25600,
+    "editor.rulers": [
+        80,
+        120,
+        500
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "github.copilot.chat.enable": true,
+    "github.copilot.chat.welcomeMessage": "always",
+    "github.copilot.advanced": {
+        "debug.overrideEngine": "copilot-chat",
+        "length": 500
+    },
+    "cSpell.enabled": true,
+    "cSpell.language": "en,ru",
+    "cSpell.dictionaries": [
+        "en-US",
+        "ru"
+    ],
+    "cSpell.enabledFileTypes": {
+        "plaintext": true,
+        "markdown": true,
+        "python": true,
+        "json": true,
+        "jsonc": true
+    },
+    "cSpell.words": [
+        "Binance",
+        "WebSocket",
+        "Autopilot",
+        "LSTM",
+        "CNN",
+        "Transformer",
+        "SOLUSDT"
+    ],
+    "cSpell.ignoreRegExpList": [
+        "[А-Яа-яЁё]+"
+    ],
+    "chat.checkpoints.enabled": true,
+    "chat.math.enabled": true,
+    "chat.todoListTool.enabled": true,
+    "chat.notifyWindowOnConfirmation": true,
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.allowWorkspaceConfiguration": true,
+    // Профиль терминала для автo-активации venv (safe): запускает zsh и активирует venv
+    "terminal.integrated.profiles.osx": {
+        "Project venv": {
+            "path": "zsh",
+            "args": [
+                "-l",
+                "-c",
+                "source ${workspaceFolder}/venv/bin/activate && exec zsh -l"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.osx": "Project venv",
+    // PATH только для этого воркспейса: в приоритете venv/bin для всех терминалов
+    "terminal.integrated.env.osx": {
+        "PATH": "${env:HOME}/bin:${workspaceFolder}/venv/bin:${env:PATH}",
+        "VIRTUAL_ENV": "${workspaceFolder}/venv"
+    },
+    // Автопрофиль для автоматизации (tasks/debug/extensions): тоже активирует venv
+    "terminal.integrated.automationProfile.osx": {
+        "path": "zsh",
+        "args": [
+            "-l"
+        ]
+    },
+    
+    "chat.tools.terminal.autoApprove": {
+        "^git\\s+status$": true,
+        "^pytest(\\s|$)": true,
+        "^python\\s+copilot/main.py\\b": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/rm\\s+-rf\\b/i": false,
+        "/drop\\s+table/i": false
+    },
+    "git.detectWorktrees": true,
+    "editor.aiStats.enabled": true,
+    "accessibility.openChatEditedFiles": false,
+    "python.useEnvironmentsExtension": true,
+    // Просим Python extension активировать среду при запуске терминала
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python-envs.pythonProjects": []
+    
+}

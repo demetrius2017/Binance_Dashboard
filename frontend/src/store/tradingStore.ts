@@ -16,7 +16,9 @@ interface TradingState {
   
   // Actions
   setPositions: (positions: Position[]) => void
+  upsertPosition: (position: Position) => void
   setTrades: (trades: Trade[]) => void
+  prependTrade: (trade: Trade) => void
   setMetrics: (metrics: Metrics) => void
   setEquityData: (data: EquityPoint[]) => void
   addEquityPoint: (point: EquityPoint) => void
@@ -55,7 +57,18 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   
   // Actions
   setPositions: (positions) => set({ positions }),
+  upsertPosition: (position) => set((state) => {
+    const idx = state.positions.findIndex(p => p.id === position.id)
+    const positions = [...state.positions]
+    if (idx >= 0) positions[idx] = position
+    else positions.unshift(position)
+    // Recompute equity when positions change
+    const totalUnrealized = positions.reduce((sum, p) => sum + p.unrealizedPnl, 0)
+    const currentEquity = state.balance + totalUnrealized
+    return { positions, currentEquity }
+  }),
   setTrades: (trades) => set({ trades }),
+  prependTrade: (trade) => set((state) => ({ trades: [trade, ...state.trades].slice(0, 1000) })),
   setMetrics: (metrics) => set({ metrics }),
   setEquityData: (data) => set({ equityData: data }),
   addEquityPoint: (point) => set((state) => ({

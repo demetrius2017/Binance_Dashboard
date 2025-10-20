@@ -52,3 +52,39 @@ export interface TickerData {
   price: number
   change24h: number
 }
+
+// Realtime WS message shapes
+export type PriceUpdate = {
+  type: 'price_update'
+  symbol: string
+  price: number
+  ts?: number
+}
+
+export type PositionUpdate = {
+  type: 'position_update'
+  position: Position
+}
+
+export type TradeExecuted = {
+  type: 'trade_executed'
+  trade: Trade
+}
+
+export type EquitySnapshot = {
+  type: 'equity_snapshot'
+  time: number
+  equity: number
+}
+
+export type Heartbeat = {
+  type: 'heartbeat'
+  ts: number
+}
+
+export type RealtimeMessage =
+  | PriceUpdate
+  | PositionUpdate
+  | TradeExecuted
+  | EquitySnapshot
+  | Heartbeat

@@ -1,0 +1,165 @@
+{
+"version": "2.0.0",
+  "tasks":  {
+      "label": "📧 Проверить почту PM",
+      "type": "shell",
+      "command": "python -c \"from simple_mail import mail_check; result = mail_check('PM'); print(f'✅ Mail result: {result}')\"",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+"reveal": "always",
+"focus": false,
+        "panel": "shared",
+"showReuseMessage": false
+      },
+"problemMatcher": []
+},"Check Mail Server",
+"type": "shell",
+      "command": "ps aux | grep mail_api_server",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🚀 Запустить почтовый сервер",
+      "type": "shell",
+      "command": "python mail_api_server.py",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+"echo": true,
+        "reveal": "always",
+"focus": false,
+"panel": "new",
+"showReuseMessage": false
+},
+      "problemMatcher": []
+    },
+ {
+      "label": "Check Mail PM",
+      "type": "shell",
+      "command": "python -c \"from simple_mail import mail_check; print(mail_check('PM')); input('Press Enter to continue...')\"",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+"reveal": "always",
+"focus": false,
+        "panel": "new",
+"showReuseMessage": false
+      },
+"problemMatcher": []
+},
+    {
+      "label": "🩺 Health Check API",
+      "type": "shell",
+      "command": "curl -s 'http://localhost:8601/api/health?simple=1'",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🎯 Запустить Project Controller",
+      "type": "shell",
+"command": "python unified_project_controller.py",
+      "group": "build",
+"presentation": {
+"echo": true,
+"reveal": "always",
+"focus": false,
+"panel": "new"
+},
+      "problemMatcher": []
+    },
+    {
+"label": "🚀 Запустить Autopilot UI",
+      "type": "shell",
+"command":"python autopilot_ui_fixed.py",
+"group": "build",
+"isBackground": true,
+"presentation": {
+"echo": true,
+"reveal": "always",
+"focus": false,
+"panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 Тест: ML система",
+      "type": "shell",
+      "command": "python -c \"importin_memory_ml_trainer; print('✅ ML система доступна')\"",
+"group": "test",
+"presentation": {
+"echo": true,
+"reveal": "always",
+"focus": false,
+"panel": "shared"
+},
+      "problemMatcher": []
+    },
+    {
+"label": "🔧 Установить зависимости",
+      "type": "shell",
+"command":"pip install -r requirements.txt",
+"group": "build",
+"presentation": {
+"echo": true,
+"reveal": "always",
+"focus": false,
+"panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+"label": "📊 Статус проекта",
+      "type": "shell",
+      "command": "python -c \"import json; data=json.load(open('system_stats.json')); print(f'\\n📊 Статус: {data.get(\\\"status\\\", \\\"unknown\\\")}\\n🕒 Последнее обновление: {data.get(\\\"timestamp\\\", \\\"неизвестно\\\")}\\n💬 Сообщений: {data.get(\\\"total_messages\\\", 0)}')\"",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+"reveal": "always",
+"focus": false,
+        "panel": "shared"
+      },
+"problemMatcher": []
+},
+    {
+      "label": "🛑 Остановить все процессы",
+      "type": "shell",
+      "command": "pkill -f 'python.*mail_api_server' && pkill -f 'python.*autopilot_ui_fixed' && echo '✅ Процессы остановлены'",
+      "group": "build",
+"presentation": {
+        "echo": true,
+"reveal": "always",
+"focus": false,
+"panel": "shared"
+},
+      "problemMatcher": []
+    },
+    {
+"label": "🔄 PM: Полнаяинициализация",
+      "type": "shell",
+      "command": "echo '🚀 Запуск PM инициализации...' &&python -c \"import os;os.system('ps aux | grep mail_api_server | grep-v grep || python mail_api_server.py &'); print('📧 Почтовый сервер проверен'); from simple_mail import mail_check; print(mail_check('PM')); import time; time.sleep(1); os.system('python unified_project_controller.py')\"",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+"focus": false,
+        "panel": "new"
+},
+"problemMatcher": []
+    }
+  ]
+}

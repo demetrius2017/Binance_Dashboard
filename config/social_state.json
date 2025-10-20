@@ -1,0 +1,87 @@
+{
+  "twitter_state": {
+    "accounts": {
+      "elonmusk": {
+        "last_tweet_id": null,
+        "etag": null,
+        "last_check": "2025-10-11T19:12:46.779922+00:00",
+        "last_tweet_time": "2025-10-11T14:30:00.000Z",
+        "total_checks": 4,
+        "tweets_found": 0,
+        "avg_delay_minutes": 0.0,
+        "rate_limited_until": null,
+        "rate_limit_count": 4
+      },
+      "realdonaldtrump": {
+        "last_tweet_id": "1978148814776046046",
+        "etag": null,
+        "last_check": "2025-10-18T05:10:36.414369+00:00",
+        "last_tweet_time": "2025-10-14T17:20:04.000Z",
+        "total_checks": 357,
+        "tweets_found": 10,
+        "avg_delay_minutes": 4358.293160201693,
+        "rate_limited_until": null,
+        "rate_limit_count": 1
+      },
+      "potus": {
+        "last_tweet_id": null,
+        "etag": null,
+        "last_check": "2025-10-11T19:07:52.212341+00:00",
+        "last_tweet_time": "2025-10-11T14:30:00.000Z",
+        "total_checks": 2,
+        "tweets_found": 0,
+        "avg_delay_minutes": 0.0,
+        "is_disabled": false,
+        "disabled_reason": null,
+        "rate_limited_until": null,
+        "rate_limit_count": 2
+      },
+      "whitehouse": {
+        "last_tweet_id": "1979299277852807337",
+        "etag": null,
+        "last_check": "2025-10-18T00:45:54.599194+00:00",
+        "last_tweet_time": "2025-10-17T21:31:36.000Z",
+        "total_checks": 243,
+        "tweets_found": 69,
+        "avg_delay_minutes": 10.02611190927977,
+        "rate_limited_until": null,
+        "rate_limit_count": 103
+      },
+      "jdvance": {
+        "last_tweet_id": "1979350502308745709",
+        "etag": null,
+        "last_check": "2025-10-18T01:03:54.474392+00:00",
+        "last_tweet_time": "2025-10-18T00:55:08.000Z",
+        "total_checks": 55,
+        "tweets_found": 14,
+        "avg_delay_minutes": 130.31804176337312,
+        "rate_limited_until": null,
+        "rate_limit_count": 33
+      },
+      "presssec": {
+        "last_tweet_id": "1979360819596136741",
+        "etag": null,
+        "last_check": "2025-10-18T05:10:44.864489+00:00",
+        "last_tweet_time": "2025-10-18T01:36:08.000Z",
+        "total_checks": 87,
+        "tweets_found": 55,
+        "avg_delay_minutes": 82.3685076640078,
+        "rate_limited_until": null,
+        "rate_limit_count": 42
+      },
+      "secgov": {
+        "last_tweet_id": "1973380673831387510",
+        "etag": null,
+        "last_check": "2025-10-18T00:46:17.884125+00:00",
+        "last_tweet_time": "2025-10-01T13:33:10.000Z",
+        "total_checks": 57,
+        "tweets_found": 4,
+        "avg_delay_minutes": 14801.400650756666,
+        "rate_limited_until": null,
+        "rate_limit_count": 46
+      }
+    },
+    "last_updated": "2025-10-18T05:10:44.864489+00:00"
+  },
+  "description": "Хранение состояния Twitter API: last_tweet_id, ETag для каждого аккаунта"
+}

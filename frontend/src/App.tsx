@@ -1,16 +1,24 @@
 import { useEffect } from 'react'
 import { TickerBar } from './components/TickerBar'
 import { MetricsGrid } from './components/MetricsGrid'
+import { EquityChart } from './components/EquityChart'
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card'
 import { useTradingStore } from './store/tradingStore'
 import { formatNumber, formatPercent } from './lib/utils'
+import { PositionsTable } from './components/PositionsTable'
+import { TradesList } from './components/TradesList'
+// import { useWebSocket } from './hooks/useWebSocket'
 
 function App() {
   const currentEquity = useTradingStore((state) => state.currentEquity)
   const balance = useTradingStore((state) => state.balance)
   const connected = useTradingStore((state) => state.connected)
   const setMetrics = useTradingStore((state) => state.setMetrics)
+  const setEquityData = useTradingStore((state) => state.setEquityData)
+  const addEquityPoint = useTradingStore((state) => state.addEquityPoint)
   const updatePrice = useTradingStore((state) => state.updatePrice)
+  // const wsUrl = import.meta.env.VITE_WS_URL as string | undefined
+  // useWebSocket({ url: wsUrl ?? 'ws://localhost:8000/ws' })
   
   // Initialize mock data
   useEffect(() => {
@@ -27,6 +35,23 @@ function App() {
       winningTrades: 3,
       losingTrades: 1,
     })
+
+    // Генерация исторической equity-кривой за 72 часа (1 точка в минуту)
+    const now = Date.now()
+    const points = 72 * 60
+    const data: { timestamp: number; time: string; equity: number }[] = []
+    let equity = 10000
+    for (let i = 0; i < points; i++) {
+      const ts = now - (points - i) * 60 * 1000
+      // Плавное движение + редкие сделки
+      if (Math.random() > 0.995) {
+        equity += (Math.random() - 0.3) * 50
+      } else {
+        equity += (Math.random() - 0.5) * 2
+      }
+      data.push({ timestamp: ts, time: '', equity: parseFloat(equity.toFixed(2)) })
+    }
+    setEquityData(data)
   }, [setMetrics])
   
   // Simulate real-time price updates
@@ -42,6 +67,11 @@ function App() {
       updatePrice('ETH', 3962.25 + ethChange)
       updatePrice('SOL', 187.55 + solChange)
       updatePrice('BNB', 1095.45 + bnbChange)
+
+      // Live обновление equity (микро-изменения)
+      const last = (useTradingStore as any).getState().currentEquity as number
+      const newEquity = last + (Math.random() - 0.48) * 0.5
+      addEquityPoint({ timestamp: Date.now(), time: '', equity: parseFloat(newEquity.toFixed(2)) })
     }, 1000)
     
     return () => clearInterval(interval)
@@ -91,10 +121,10 @@ function App() {
             </CardHeader>
           </Card>
           
-          {/* Chart Placeholder */}
+          {/* Equity Chart */}
           <Card>
-            <CardContent className="p-4 h-[400px] flex items-center justify-center">
-              <div className="text-gray-500">Equity Chart (Lightweight Charts) - Coming Soon</div>
+            <CardContent className="p-4">
+              <EquityChart />
             </CardContent>
           </Card>
           
@@ -124,19 +154,8 @@ function App() {
         
         {/* Sidebar */}
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold">COMPLETED TRADES</CardTitle>
-                <div className="text-xs text-gray-500">Last 90 Trades</div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-gray-500 text-center py-8">
-                Trades List - Coming Soon
-              </div>
-            </CardContent>
-          </Card>
+          <TradesList />
+          <PositionsTable />
         </div>
       </div>
     </div>
