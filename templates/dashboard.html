@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binance Real-Time Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>🚀 Binance Real-Time Analytics Dashboard</h1>
+            <div class="connection-status">
+                <span class="status-indicator" id="connectionStatus"></span>
+                <span id="connectionText">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="dashboard-content">
+            <!-- Summary Cards -->
+            <div class="summary-section">
+                <div class="summary-card">
+                    <h3>Total Pairs Monitored</h3>
+                    <div class="summary-value" id="totalPairs">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>24h Gainers</h3>
+                    <div class="summary-value positive" id="gainers">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>24h Losers</h3>
+                    <div class="summary-value negative" id="losers">0</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Last Update</h3>
+                    <div class="summary-value" id="lastUpdate">-</div>
+                </div>
+            </div>
+
+            <!-- Trading Pairs Grid -->
+            <div class="pairs-section">
+                <div class="section-header">
+                    <h2>📊 Trading Pairs</h2>
+                    <button class="btn-primary" onclick="showAddPairModal()">+ Add Pair</button>
+                </div>
+                <div class="pairs-grid" id="pairsGrid">
+                    <!-- Trading pair cards will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h3>Price History - <span id="selectedPair">BTCUSDT</span></h3>
+                    <canvas id="priceChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>24h Volume Comparison</h3>
+                    <canvas id="volumeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Order Book Section -->
+            <div class="orderbook-section">
+                <h3>Order Book - <span id="orderbookPair">BTCUSDT</span></h3>
+                <div class="orderbook-container">
+                    <div class="orderbook-side">
+                        <h4 class="asks-header">Asks (Sell)</h4>
+                        <div id="asksBook" class="orderbook-list"></div>
+                    </div>
+                    <div class="orderbook-side">
+                        <h4 class="bids-header">Bids (Buy)</h4>
+                        <div id="bidsBook" class="orderbook-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Pair Modal -->
+        <div id="addPairModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAddPairModal()">&times;</span>
+                <h2>Add Trading Pair</h2>
+                <input type="text" id="newPairInput" placeholder="Enter symbol (e.g., DOGEUSDT)" />
+                <button class="btn-primary" onclick="addPair()">Add Pair</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
