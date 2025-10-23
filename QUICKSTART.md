@@ -29,7 +29,9 @@ http://localhost:5173/
 ### Проверка в DevTools
 Откройте Console (F12) и убедитесь:
 ```
-[Binance WS] Connected: btcusdt@bookTicker/ethusdt@bookTicker/solusdt@bookTicker/bnbusdt@bookTicker
+[Binance WS] Connected: btcusdt@bookTicker
+[Binance WS] Connected: ethusdt@bookTicker
+...
 ```
 
 ---

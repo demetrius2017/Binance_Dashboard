@@ -37,22 +37,21 @@ export type BinanceEventHandler = {
 }
 
 export class BinanceWebSocketClient {
-  private ws: WebSocket | null = null
-  private reconnectTimer: number | null = null
+  private connections: Map<string, WebSocket> = new Map()
+  private reconnectTimers: Map<string, number> = new Map()
+  private manualCloseSymbols: Set<string> = new Set()
   private isManualClose = false
   private symbols: string[]
-  private streams: ('bookTicker' | 'aggTrade')[]
   private handlers: BinanceEventHandler
   private reconnectDelayMs: number
   
   constructor(
     symbols: string[],
-    streams: ('bookTicker' | 'aggTrade')[],
+    _streams: ('bookTicker' | 'aggTrade')[],  // Reserved for future use
     handlers: BinanceEventHandler,
     reconnectDelayMs = 3000
   ) {
     this.symbols = symbols
-    this.streams = streams
     this.handlers = handlers
     this.reconnectDelayMs = reconnectDelayMs
   }
@@ -60,90 +59,112 @@ export class BinanceWebSocketClient {
   connect() {
     this.isManualClose = false
     
-    // Закрыть существующее подключение если есть
-    if (this.ws) {
-      this.ws.close()
-      this.ws = null
-    }
+    // Закрыть все существующие подключения (широкая чистка локальных списков)
+    this.connections.forEach((ws, sym) => {
+      this.manualCloseSymbols.add(sym)
+      ws.close()
+    })
+    this.connections.clear()
     
-    // Формат: wss://fstream.binance.com/stream?streams=btcusdt@bookTicker/ethusdt@bookTicker
-    const streamNames = this.symbols.flatMap(sym => 
-      this.streams.map(stream => `${sym.toLowerCase()}@${stream}`)
-    )
-    const url = `wss://fstream.binance.com/stream?streams=${streamNames.join('/')}`
-    
-    try {
-      this.ws = new WebSocket(url)
+    // Создать отдельное подключение для каждого символа
+    // Binance рекомендует: wss://fstream.binance.com/ws/btcusdt@bookTicker
+    this.symbols.forEach(symbol => {
+      const streamName = `${symbol.toLowerCase()}@bookTicker`
+      const url = `wss://fstream.binance.com/ws/${streamName}`
       
-      this.ws.onopen = () => {
-        console.log('[Binance WS] Connected:', streamNames)
-        this.handlers.onConnect?.()
-      }
-      
-      this.ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data)
-          const data = msg.data
-          
-          if (!data) return
-          
-          switch (data.e) {
-            case 'bookTicker':
-              this.handlers.onBookTicker?.(data as BinanceBookTickerEvent)
-              break
-            case 'aggTrade':
-              this.handlers.onTrade?.(data as BinanceTradeEvent)
-              break
-          }
-        } catch (err) {
-          console.error('[Binance WS] Parse error:', err)
-        }
-      }
-      
-      this.ws.onerror = (event) => {
-        const error = new Error('WebSocket error')
-        console.error('[Binance WS] Error:', event)
-        this.handlers.onError?.(error)
-      }
-      
-      this.ws.onclose = () => {
-        console.log('[Binance WS] Disconnected')
-        this.handlers.onDisconnect?.()
+      try {
+        const ws = new WebSocket(url)
+        this.connections.set(symbol, ws)
         
-        if (!this.isManualClose) {
-          this.scheduleReconnect()
+        ws.onopen = () => {
+          console.log(`[Binance WS] Connected: ${streamName}`)
+          // Вызываем onConnect только когда все подключились
+          if (this.connections.size === this.symbols.length) {
+            const allConnected = Array.from(this.connections.values())
+              .every(w => w.readyState === WebSocket.OPEN)
+            if (allConnected) {
+              this.handlers.onConnect?.()
+            }
+          }
         }
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            
+            // Прямой формат (без обёртки msg.data)
+            if (data.e === 'bookTicker') {
+              this.handlers.onBookTicker?.(data as BinanceBookTickerEvent)
+            } else if (data.e === 'aggTrade') {
+              this.handlers.onTrade?.(data as BinanceTradeEvent)
+            }
+          } catch (err) {
+            console.error('[Binance WS] Parse error:', err)
+          }
+        }
+        
+        ws.onerror = (event) => {
+          if (this.manualCloseSymbols.has(symbol)) {
+            this.manualCloseSymbols.delete(symbol)
+            return
+          }
+          const error = new Error(`WebSocket error for ${symbol}`)
+          console.error(`[Binance WS] Error (${symbol}):`, event)
+          this.handlers.onError?.(error)
+        }
+        
+        ws.onclose = () => {
+          const closedManually = this.manualCloseSymbols.has(symbol)
+          if (closedManually) {
+            this.manualCloseSymbols.delete(symbol)
+          } else {
+            console.log(`[Binance WS] Disconnected: ${symbol}`)
+          }
+          this.connections.delete(symbol)
+          
+          // Вызываем onDisconnect только когда все отключились
+          if (!closedManually && this.connections.size === 0) {
+            this.handlers.onDisconnect?.()
+          }
+          
+          if (!this.isManualClose && !closedManually) {
+            this.scheduleReconnect(symbol)
+          }
+        }
+      } catch (err) {
+        console.error(`[Binance WS] Connect error (${symbol}):`, err)
+        this.handlers.onError?.(err as Error)
+        this.scheduleReconnect(symbol)
       }
-    } catch (err) {
-      console.error('[Binance WS] Connect error:', err)
-      this.handlers.onError?.(err as Error)
-      this.scheduleReconnect()
-    }
+    })
   }
 
-  private scheduleReconnect() {
-    if (this.reconnectTimer || this.isManualClose) return
+  private scheduleReconnect(symbol: string) {
+    if (this.reconnectTimers.has(symbol) || this.isManualClose) return
     
-    this.reconnectTimer = window.setTimeout(() => {
-      this.reconnectTimer = null
+    const timer = window.setTimeout(() => {
+      this.reconnectTimers.delete(symbol)
       if (!this.isManualClose) {
-        console.log('[Binance WS] Reconnecting...')
+        console.log(`[Binance WS] Reconnecting: ${symbol}`)
         this.connect()
       }
     }, this.reconnectDelayMs)
+    
+    this.reconnectTimers.set(symbol, timer)
   }
 
   disconnect() {
     this.isManualClose = true
     
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
+    // Очистить все таймеры
+    this.reconnectTimers.forEach(timer => clearTimeout(timer))
+    this.reconnectTimers.clear()
     
-    if (this.ws) {
-      this.ws.close()
-      this.ws = null
-    }
+    // Закрыть все соединения
+    this.connections.forEach((ws, sym) => {
+      this.manualCloseSymbols.add(sym)
+      ws.close()
+    })
+    this.connections.clear()
   }
 }
