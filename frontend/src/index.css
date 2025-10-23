@@ -8,9 +8,30 @@
   }
   body {
     margin: 0;
-    background-color: hsl(222 47% 11%);
     color: hsl(210 40% 98%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+
+  body[data-dashboard-theme='classic'] {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.18), transparent 55%),
+      radial-gradient(circle at 80% 85%, rgba(16, 185, 129, 0.14), transparent 50%),
+      linear-gradient(135deg, #020617 0%, #0f172a 48%, #020617 100%);
+  }
+
+  body[data-dashboard-theme='neon'] {
+    background:
+      radial-gradient(circle at 15% 25%, rgba(236, 72, 153, 0.32), transparent 55%),
+      radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.25), transparent 52%),
+      linear-gradient(130deg, #030712 0%, #111827 52%, #2d1b69 100%);
+    color: #f9fafb;
+  }
+
+  body[data-dashboard-theme='carbon'] {
+    background:
+      linear-gradient(160deg, #050505 0%, #0f172a 55%, #030712 100%);
+    color: #f8fafc;
   }
 }

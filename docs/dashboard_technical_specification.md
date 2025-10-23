@@ -33,16 +33,40 @@
 - Python-binance (Binance API wrapper)
 - asyncio (асинхронная обработка)
 
-**WebSocket Protocol:**
+**WebSocket Protocol (v2):**
 ```typescript
-// Входящие события от сервера
-type WSMessage = 
-  | { type: 'price_update', symbol: string, price: number, timestamp: number }
-  | { type: 'position_update', positions: Position[] }
-  | { type: 'trade_executed', trade: Trade }
-  | { type: 'equity_snapshot', equity: number, unrealized_pnl: number }
-  | { type: 'heartbeat', server_time: number }
+type AccountSummary = {
+  balance: number                  // Текущий wallet balance
+  availableBalance: number         // Доступно для открытия позиций
+  marginRatio: number              // % использования маржи
+  leverage: number                 // Текущее плечо аккаунта
+  pnl24h: number                   // PnL за последние 24 часа
+}
+
+type WSMessage =
+  | { type: 'price_update'; symbol: string; price: number; ts: number }
+  | { type: 'position_update'; position: Position }
+  | { type: 'trade_executed'; trade: Trade }
+  | { type: 'trades_snapshot'; trades: Trade[]; ts: number }
+  | { type: 'equity_snapshot'; time: number; equity: number }
+  | { type: 'metrics_snapshot'; metrics: Metrics; ts: number }
+  | { type: 'ticker_snapshot'; tickers: TickerData[]; ts: number }
+  | { type: 'account_snapshot'; account: AccountSummary; ts: number }
+  | { type: 'heartbeat'; ts: number }
 ```
+
+**Частота отправки:**
+
+| Тип события         | Триггер                                    | Частота/политика |
+|---------------------|---------------------------------------------|------------------|
+| `price_update`      | При каждом изменении best bid/ask          | до 60/с на символ |
+| `position_update`   | Поступил user-data update от Binance       | по событию       |
+| `trade_executed`    | Новая сделка (fill)                        | по событию       |
+| `equity_snapshot`   | Пересчёт equity (цена/позиция изменилась)  | 1–2/с            |
+| `metrics_snapshot`  | Завершилась агрегация метрик (PnL, Sharpe)  | 1/5с             |
+| `ticker_snapshot`   | Обновление 24h статистик по символам       | 1/10с            |
+| `account_snapshot`  | Binance `ACCOUNT_UPDATE` либо таймер 5с    | 1/5с             |
+| `heartbeat`         | Keep-alive                                   | 1/5с             |
 
 ### 2.2 Компоненты системы
 

@@ -1,20 +1,27 @@
 import { useTradingStore } from '@/store/tradingStore'
-import { formatPrice, formatPercent } from '@/lib/utils'
+import { cn, formatPrice, formatPercent } from '@/lib/utils'
+import { useThemeStyles } from '@/theme/useThemeStyles'
 
 export function TickerBar() {
   const tickers = useTradingStore((state) => state.tickers)
+  const { styles } = useThemeStyles()
   
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 mb-4 overflow-x-auto">
-      <div className="flex gap-6 min-w-max">
+    <div className={cn('rounded-xl p-4 mb-4 overflow-x-auto transition-all duration-300', styles.ticker)}>
+      <div className={cn('flex min-w-max items-center gap-6 divide-x', styles.divider)}>
         {tickers.map((ticker) => (
-          <div key={ticker.symbol} className="flex items-center gap-2">
-            {ticker.symbol === 'BTC' && <span className="text-orange-400">₿</span>}
-            {ticker.symbol === 'SOL' && <span className="text-purple-400">◎</span>}
-            {ticker.symbol === 'BNB' && <span className="text-yellow-400">◆</span>}
-            <span className="text-gray-400 text-sm">{ticker.symbol}</span>
-            <span className="font-mono font-semibold">${formatPrice(ticker.price)}</span>
-            <span className={`text-sm font-medium ${ticker.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <div key={ticker.symbol} className="flex items-center gap-2 px-4 first:pl-0">
+            {ticker.symbol === 'BTC' && <span className={cn('text-base', styles.highlight)}>₿</span>}
+            {ticker.symbol === 'SOL' && <span className={cn('text-base', styles.highlight)}>◎</span>}
+            {ticker.symbol === 'BNB' && <span className={cn('text-base', styles.highlight)}>◆</span>}
+            <span className={cn('text-xs font-semibold uppercase tracking-wide', styles.muted)}>{ticker.symbol}</span>
+            <span className={cn('font-mono text-sm font-semibold', styles.highlight)}>${formatPrice(ticker.price)}</span>
+            <span
+              className={cn(
+                'text-sm font-semibold transition-colors duration-200',
+                ticker.change24h >= 0 ? styles.positive : styles.negative,
+              )}
+            >
               {formatPercent(ticker.change24h)}
             </span>
           </div>

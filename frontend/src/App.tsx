@@ -4,90 +4,70 @@ import { MetricsGrid } from './components/MetricsGrid'
 import { EquityChart } from './components/EquityChart'
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card'
 import { useTradingStore } from './store/tradingStore'
-import { formatNumber, formatPercent } from './lib/utils'
+import { cn, formatNumber, formatPercent } from './lib/utils'
 import { PositionsTable } from './components/PositionsTable'
 import { TradesList } from './components/TradesList'
-// import { useWebSocket } from './hooks/useWebSocket'
+import { useWebSocket } from './hooks/useWebSocket'
+import { ChartErrorBoundary } from './components/ChartErrorBoundary'
+import { ThemeSwitcher } from './components/ThemeSwitcher'
+import { useThemeStyles } from './theme/useThemeStyles'
+
+const rangeOptions = ['ALL', '72H', '24H', '12H'] as const
 
 function App() {
   const currentEquity = useTradingStore((state) => state.currentEquity)
   const balance = useTradingStore((state) => state.balance)
+  const account = useTradingStore((state) => state.account)
   const connected = useTradingStore((state) => state.connected)
-  const setMetrics = useTradingStore((state) => state.setMetrics)
-  const setEquityData = useTradingStore((state) => state.setEquityData)
-  const addEquityPoint = useTradingStore((state) => state.addEquityPoint)
-  const updatePrice = useTradingStore((state) => state.updatePrice)
-  // const wsUrl = import.meta.env.VITE_WS_URL as string | undefined
-  // useWebSocket({ url: wsUrl ?? 'ws://localhost:8000/ws' })
+  const wsUrl = import.meta.env.VITE_WS_URL as string | undefined
+  const { theme, styles } = useThemeStyles()
+  useWebSocket({ url: wsUrl ?? 'ws://localhost:8000/ws' })
   
-  // Initialize mock data
   useEffect(() => {
-    setMetrics({
-      totalPnL: 46.15,
-      totalPnLPercent: 0.46,
-      winRate: 75.0,
-      sharpeRatio: 1.82,
-      maxDrawdown: -2.3,
-      avgWin: 17.09,
-      avgLoss: -5.13,
-      profitFactor: 2.89,
-      totalTrades: 4,
-      winningTrades: 3,
-      losingTrades: 1,
-    })
-
-    // Генерация исторической equity-кривой за 72 часа (1 точка в минуту)
-    const now = Date.now()
-    const points = 72 * 60
-    const data: { timestamp: number; time: string; equity: number }[] = []
-    let equity = 10000
-    for (let i = 0; i < points; i++) {
-      const ts = now - (points - i) * 60 * 1000
-      // Плавное движение + редкие сделки
-      if (Math.random() > 0.995) {
-        equity += (Math.random() - 0.3) * 50
-      } else {
-        equity += (Math.random() - 0.5) * 2
-      }
-      data.push({ timestamp: ts, time: '', equity: parseFloat(equity.toFixed(2)) })
+    document.body.dataset.dashboardTheme = theme
+    return () => {
+      delete document.body.dataset.dashboardTheme
     }
-    setEquityData(data)
-  }, [setMetrics])
-  
-  // Simulate real-time price updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Small random price changes
-      const btcChange = (Math.random() - 0.48) * 50
-      const ethChange = (Math.random() - 0.48) * 2
-      const solChange = (Math.random() - 0.48) * 0.5
-      const bnbChange = (Math.random() - 0.48) * 5
-      
-      updatePrice('BTC', 110672.50 + btcChange)
-      updatePrice('ETH', 3962.25 + ethChange)
-      updatePrice('SOL', 187.55 + solChange)
-      updatePrice('BNB', 1095.45 + bnbChange)
+  }, [theme])
 
-      // Live обновление equity (микро-изменения)
-      const last = (useTradingStore as any).getState().currentEquity as number
-      const newEquity = last + (Math.random() - 0.48) * 0.5
-      addEquityPoint({ timestamp: Date.now(), time: '', equity: parseFloat(newEquity.toFixed(2)) })
-    }, 1000)
-    
-    return () => clearInterval(interval)
-  }, [updatePrice])
-  
   const totalPnL = currentEquity - balance
-  const totalPnLPercent = ((totalPnL / balance) * 100)
+  const totalPnLPercent = balance ? (totalPnL / balance) * 100 : 0
+  const accountStats = [
+    {
+      label: 'Available Balance',
+      value: `$${formatNumber(account.availableBalance, 2)}`,
+      tone: styles.highlight,
+    },
+    {
+      label: 'Margin Ratio',
+      value: `${formatNumber(account.marginRatio, 2)}%`,
+      tone: styles.mutedStrong,
+    },
+    {
+      label: '24h PnL',
+      value: `${account.pnl24h >= 0 ? '+' : '-'}$${formatNumber(Math.abs(account.pnl24h), 2)}`,
+      tone: account.pnl24h >= 0 ? styles.positive : styles.negative,
+    },
+    {
+      label: 'Leverage',
+      value: `${formatNumber(account.leverage, 1)}×`,
+      tone: styles.highlight,
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-4">
-      {/* Connection Status */}
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-        <span className="text-xs text-gray-400">{connected ? 'Live' : 'Disconnected'}</span>
+    <div className={cn('min-h-screen p-4 transition-colors duration-500', styles.page)}>
+      {/* Connection & Theme Controls */}
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-3 sm:flex-row sm:items-center">
+        <ThemeSwitcher />
+        <div className={cn('flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors duration-300', styles.statusPill)}>
+          <div className={cn('h-2 w-2 rounded-full transition-colors duration-300', connected ? styles.statusDotActive : styles.statusDot)} />
+          <span className={cn('text-xs font-semibold uppercase tracking-wide', styles.badge)}>
+            {connected ? 'Live' : 'Disconnected'}
+          </span>
+        </div>
       </div>
-      
+
       {/* Top Bar */}
       <TickerBar />
       
@@ -95,15 +75,20 @@ function App() {
         {/* Main Area */}
         <div className="lg:col-span-2 space-y-4">
           {/* Equity Header */}
-          <Card>
+          <Card className={styles.card}>
             <CardHeader>
               <div className="flex items-center justify-between mb-2">
                 <CardTitle className="text-2xl font-bold">TOTAL ACCOUNT VALUE</CardTitle>
                 <div className="flex gap-2">
-                  {['ALL', '72H', '24H', '12H'].map((range) => (
+                  {rangeOptions.map((range, idx) => (
                     <button
                       key={range}
-                      className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-slate-800 text-gray-400 hover:bg-slate-700"
+                      type="button"
+                      className={cn(
+                        'px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200',
+                        styles.chip,
+                        idx === 0 && styles.chipActive,
+                      )}
                     >
                       {range}
                     </button>
@@ -111,10 +96,10 @@ function App() {
                 </div>
               </div>
               <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold">
+                <div className={cn('text-4xl font-bold', styles.highlight)}>
                   ${formatNumber(currentEquity, 2)}
                 </div>
-                <div className={`text-xl font-semibold ${totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <div className={cn('text-xl font-semibold', totalPnL >= 0 ? styles.positive : styles.negative)}>
                   {totalPnL >= 0 ? '+' : ''}${formatNumber(Math.abs(totalPnL), 2)} ({formatPercent(totalPnLPercent)})
                 </div>
               </div>
@@ -122,31 +107,29 @@ function App() {
           </Card>
           
           {/* Equity Chart */}
-          <Card>
-            <CardContent className="p-4">
-              <EquityChart />
-            </CardContent>
-          </Card>
+          <ChartErrorBoundary>
+            <Card className={styles.card}>
+              <CardContent className="p-4">
+                <EquityChart />
+              </CardContent>
+            </Card>
+          </ChartErrorBoundary>
           
           {/* Metrics */}
           <MetricsGrid />
           
           {/* Additional Stats */}
-          <Card>
+          <Card className={styles.card}>
             <CardContent className="p-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-xs text-gray-400 mb-1">Avg Win</div>
-                  <div className="text-lg font-semibold text-emerald-400">+$17.09</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 mb-1">Avg Loss</div>
-                  <div className="text-lg font-semibold text-red-400">$-5.13</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 mb-1">Total Trades</div>
-                  <div className="text-lg font-semibold text-gray-300">4</div>
-                </div>
+              <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
+                {accountStats.map((stat) => (
+                  <div key={stat.label} className="space-y-1">
+                    <div className={cn('text-xs font-semibold uppercase tracking-wide', styles.muted)}>
+                      {stat.label}
+                    </div>
+                    <div className={cn('text-lg font-semibold', stat.tone)}>{stat.value}</div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

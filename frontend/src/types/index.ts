@@ -39,12 +39,17 @@ export interface Metrics {
   totalTrades: number
   winningTrades: number
   losingTrades: number
+  realizedPnL?: number
+  unrealizedPnL?: number
+  flatTrades?: number
 }
 
 export interface EquityPoint {
   timestamp: number
   time: string
   equity: number
+  balance?: number
+  unrealizedPnl?: number
 }
 
 export interface TickerData {
@@ -53,11 +58,21 @@ export interface TickerData {
   change24h: number
 }
 
+export interface AccountSummary {
+  balance: number
+  availableBalance: number
+  marginRatio: number
+  leverage: number
+  pnl24h: number
+}
+
 // Realtime WS message shapes
 export type PriceUpdate = {
   type: 'price_update'
   symbol: string
   price: number
+  bid?: number
+  ask?: number
   ts?: number
 }
 
@@ -71,10 +86,36 @@ export type TradeExecuted = {
   trade: Trade
 }
 
+export type TradesSnapshot = {
+  type: 'trades_snapshot'
+  trades: Trade[]
+  ts: number
+}
+
 export type EquitySnapshot = {
   type: 'equity_snapshot'
   time: number
   equity: number
+  balance?: number
+  unrealizedPnl?: number
+}
+
+export type MetricsSnapshot = {
+  type: 'metrics_snapshot'
+  metrics: Metrics
+  ts: number
+}
+
+export type TickerSnapshot = {
+  type: 'ticker_snapshot'
+  tickers: TickerData[]
+  ts: number
+}
+
+export type AccountSnapshot = {
+  type: 'account_snapshot'
+  account: AccountSummary
+  ts: number
 }
 
 export type Heartbeat = {
@@ -86,5 +127,9 @@ export type RealtimeMessage =
   | PriceUpdate
   | PositionUpdate
   | TradeExecuted
+  | TradesSnapshot
   | EquitySnapshot
+  | MetricsSnapshot
+  | TickerSnapshot
+  | AccountSnapshot
   | Heartbeat

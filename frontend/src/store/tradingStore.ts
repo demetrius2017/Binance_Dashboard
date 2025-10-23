@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Position, Trade, Metrics, EquityPoint, TickerData } from '@/types'
+import type { Position, Trade, Metrics, EquityPoint, TickerData, AccountSummary } from '@/types'
 
 interface TradingState {
   // Data
@@ -10,6 +10,7 @@ interface TradingState {
   tickers: TickerData[]
   currentEquity: number
   balance: number
+  account: AccountSummary
   
   // WebSocket status
   connected: boolean
@@ -25,9 +26,10 @@ interface TradingState {
   setTickers: (tickers: TickerData[]) => void
   updatePrice: (symbol: string, price: number) => void
   setConnected: (connected: boolean) => void
+  setAccount: (account: AccountSummary) => void
 }
 
-export const useTradingStore = create<TradingState>((set, get) => ({
+export const useTradingStore = create<TradingState>((set) => ({
   // Initial state
   positions: [],
   trades: [],
@@ -43,71 +45,83 @@ export const useTradingStore = create<TradingState>((set, get) => ({
     totalTrades: 0,
     winningTrades: 0,
     losingTrades: 0,
+    realizedPnL: 0,
+    unrealizedPnL: 0,
+    flatTrades: 0,
   },
   equityData: [],
-  tickers: [
-    { symbol: 'BTC', price: 110672.50, change24h: 2.34 },
-    { symbol: 'ETH', price: 3962.25, change24h: -0.87 },
-    { symbol: 'SOL', price: 187.55, change24h: 5.12 },
-    { symbol: 'BNB', price: 1095.45, change24h: 1.23 },
-  ],
-  currentEquity: 10000,
-  balance: 10000,
+  tickers: [],
+  currentEquity: 0,
+  balance: 0,
+  account: {
+    balance: 0,
+    availableBalance: 0,
+    marginRatio: 0,
+    leverage: 0,
+    pnl24h: 0,
+  },
   connected: false,
   
   // Actions
   setPositions: (positions) => set({ positions }),
   upsertPosition: (position) => set((state) => {
     const idx = state.positions.findIndex(p => p.id === position.id)
+    if (position.quantity === 0) {
+      if (idx === -1) {
+        return { positions: state.positions }
+      }
+      const next = state.positions.filter(p => p.id !== position.id)
+      return { positions: next }
+    }
     const positions = [...state.positions]
-    if (idx >= 0) positions[idx] = position
-    else positions.unshift(position)
-    // Recompute equity when positions change
-    const totalUnrealized = positions.reduce((sum, p) => sum + p.unrealizedPnl, 0)
-    const currentEquity = state.balance + totalUnrealized
-    return { positions, currentEquity }
+    if (idx >= 0) {
+      positions[idx] = position
+    } else {
+      positions.unshift(position)
+    }
+    return { positions }
   }),
   setTrades: (trades) => set({ trades }),
   prependTrade: (trade) => set((state) => ({ trades: [trade, ...state.trades].slice(0, 1000) })),
   setMetrics: (metrics) => set({ metrics }),
   setEquityData: (data) => set({ equityData: data }),
-  addEquityPoint: (point) => set((state) => ({
-    equityData: [...state.equityData.slice(-4320), point], // Keep 72h (3 days * 24h * 60min)
-    currentEquity: point.equity,
-  })),
+  addEquityPoint: (point) => set((state) => {
+    const filtered = state.equityData.filter(p => p.timestamp !== point.timestamp)
+    const next = [...filtered, point].sort((a, b) => a.timestamp - b.timestamp)
+    const trimmed = next.slice(-4320) // 72h with 1-min cadence
+    const nextState: {
+      equityData: EquityPoint[]
+      currentEquity: number
+      balance?: number
+    } = {
+      equityData: trimmed,
+      currentEquity: point.equity,
+    }
+    if (typeof point.balance === 'number') {
+      nextState.balance = point.balance
+    }
+    return nextState
+  }),
   setTickers: (tickers) => set({ tickers }),
-  updatePrice: (symbol, price) => {
-    const state = get()
-    
-    // Update ticker
-    const tickers = state.tickers.map(t => 
-      t.symbol === symbol ? { ...t, price } : t
-    )
-    
-    // Update positions
-    const positions = state.positions.map(pos => {
-      if (pos.symbol === symbol) {
-        const direction = pos.side === 'LONG' ? 1 : -1
-        const priceDiff = price - pos.entryPrice
-        const unrealizedPnl = priceDiff * pos.quantity * direction
-        const unrealizedPnlPercent = (unrealizedPnl / (pos.entryPrice * pos.quantity)) * 100
-        
-        return {
-          ...pos,
-          currentPrice: price,
-          unrealizedPnl,
-          unrealizedPnlPercent,
-          notional: price * pos.quantity,
-        }
+  setAccount: (account) => set({ account, balance: account.balance }),
+  updatePrice: (symbol, price) => set((state) => {
+    const normalized = symbol.toUpperCase()
+
+    const tickers = (() => {
+      const idx = state.tickers.findIndex(t => t.symbol === normalized)
+      if (idx === -1) {
+        return [...state.tickers, { symbol: normalized, price, change24h: 0 }]
       }
-      return pos
-    })
-    
-    // Recalculate equity
-    const totalUnrealized = positions.reduce((sum, p) => sum + p.unrealizedPnl, 0)
-    const currentEquity = state.balance + totalUnrealized
-    
-    set({ tickers, positions, currentEquity })
-  },
+      return state.tickers.map((t, i) => (i === idx ? { ...t, price } : t))
+    })()
+
+    const positions = state.positions.map(pos => (
+      pos.symbol === normalized
+        ? { ...pos, currentPrice: price, notional: price * pos.quantity }
+        : pos
+    ))
+
+    return { tickers, positions }
+  }),
   setConnected: (connected) => set({ connected }),
 }))
