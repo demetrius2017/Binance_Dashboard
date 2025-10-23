@@ -60,6 +60,12 @@ export class BinanceWebSocketClient {
   connect() {
     this.isManualClose = false
     
+    // Закрыть существующее подключение если есть
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
+    }
+    
     // Формат: wss://fstream.binance.com/stream?streams=btcusdt@bookTicker/ethusdt@bookTicker
     const streamNames = this.symbols.flatMap(sym => 
       this.streams.map(stream => `${sym.toLowerCase()}@${stream}`)
@@ -116,12 +122,14 @@ export class BinanceWebSocketClient {
   }
 
   private scheduleReconnect() {
-    if (this.reconnectTimer) return
+    if (this.reconnectTimer || this.isManualClose) return
     
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null
-      console.log('[Binance WS] Reconnecting...')
-      this.connect()
+      if (!this.isManualClose) {
+        console.log('[Binance WS] Reconnecting...')
+        this.connect()
+      }
     }, this.reconnectDelayMs)
   }
 
