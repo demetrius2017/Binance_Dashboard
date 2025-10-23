@@ -7,21 +7,29 @@ import { useTradingStore } from './store/tradingStore'
 import { cn, formatNumber, formatPercent } from './lib/utils'
 import { PositionsTable } from './components/PositionsTable'
 import { TradesList } from './components/TradesList'
-import { useWebSocket } from './hooks/useWebSocket'
+import { useBinanceDirect } from './hooks/useBinanceDirect'
 import { ChartErrorBoundary } from './components/ChartErrorBoundary'
 import { ThemeSwitcher } from './components/ThemeSwitcher'
 import { useThemeStyles } from './theme/useThemeStyles'
 
 const rangeOptions = ['ALL', '72H', '24H', '12H'] as const
 
+// Символы для отслеживания (можно расширить)
+const TRACKED_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT']
+
 function App() {
   const currentEquity = useTradingStore((state) => state.currentEquity)
   const balance = useTradingStore((state) => state.balance)
   const account = useTradingStore((state) => state.account)
   const connected = useTradingStore((state) => state.connected)
-  const wsUrl = import.meta.env.VITE_WS_URL as string | undefined
   const { theme, styles } = useThemeStyles()
-  useWebSocket({ url: wsUrl ?? 'ws://localhost:8000/ws' })
+  
+  // Прямое подключение к Binance без промежуточного backend
+  useBinanceDirect({ 
+    symbols: TRACKED_SYMBOLS,
+    enableTrades: false,
+    tickerRefreshMs: 5000
+  })
   
   useEffect(() => {
     document.body.dataset.dashboardTheme = theme
